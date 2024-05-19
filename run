@@ -1,0 +1,6 @@
+#!/bin/bash
+
+export GO_ORIG_BIN=$(which go)
+export PATH=$PWD:$PATH
+export REPO_DIR=$PWD
+go run golang.org/x/tools/cmd/present@v0.21.0 -base=theme -use_playground=false "$@"

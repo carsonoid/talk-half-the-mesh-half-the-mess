@@ -1,0 +1,193 @@
+---
+# START CONFIGMAP_INTRO OMIT
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: client-envoy
+data:
+  envoy.yaml: |
+    node:
+      cluster: test-cluster
+      id: test-id
+    dynamic_resources:
+      cds_config:
+        resource_api_version: V3
+        path_config_source:
+          path: /etc/envoy/cds.yaml
+          watched_directory:
+            path: /etc/envoy
+      lds_config:
+        resource_api_version: V3
+        path_config_source:
+          path: /etc/envoy/lds.yaml
+          watched_directory:
+            path: /etc/envoy
+# END CONFIGMAP_INTRO OMIT
+# START CONFIGMAP_LDS OMIT
+  lds.yaml: |
+    resources:
+    - "@type": type.googleapis.com/envoy.config.listener.v3.Listener
+      name: listener_0
+      address:
+        socket_address:
+          address: "127.0.0.1"
+          port_value: 8080
+      filter_chains:
+      - filters:
+        - name: envoy.http_connection_manager
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            stat_prefix: ingress_http
+            http_filters:
+            - name: envoy.router
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+            # START CONFIGMAP_LDS_ROUTES OMIT
+            route_config:
+              # END CONFIGMAP_LDS OMIT
+              name: default_route
+              virtual_hosts:
+              - name: default_host
+                domains: [ "*" ]
+                routes:
+                # # route "Source-App: client-1" goes to service 2
+                # - match:
+                #     prefix: "/"
+                #     headers:
+                #     - { name: "Source-App", exact_match: "client-1" }
+                #   route: { cluster: service_2_cluster }
+
+                # default route goes to service 1
+                - match:
+                    prefix: "/"
+                  route: { cluster: service_1_cluster }
+                # END CONFIGMAP_LDS_ROUTES OMIT
+                  # uncomment to enable other mesh features
+                  # retry_policy:
+                  #   retry_on: 5xx;gateway-error;reset;connect-failure
+                  # weighted_clusters:
+                  #   clusters:
+                  #   - name: service_1_cluster
+                  #     weight: 50
+                  #   - name: service_2_cluster
+                  #     weight: 50
+# START CONFIGMAP_CDS OMIT
+  cds.yaml: |
+    resources:
+    - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
+      name: service_1_cluster
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: service_1_cluster
+        endpoints:
+        - lb_endpoints:
+          - endpoint:
+              address:
+                socket_address: { address: service-1.default.svc.cluster.local, port_value: 8080 }
+    - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
+      name: service_2_cluster
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: service_2_cluster
+        endpoints:
+        - lb_endpoints:
+          - endpoint:
+              address:
+                socket_address: { address: service-2.default.svc.cluster.local, port_value: 8080 }
+# END CONFIGMAP_CDS OMIT
+---
+# START DEPLOYMENT1 OMIT
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: client-1
+      purpose: client
+  template:
+    metadata:
+      labels:
+        app: client-1
+        purpose: client
+    spec:
+  # START CONTAINERS OMIT
+  #...
+  # END DEPLOYMENT1 OMIT
+      containers:
+      - name: envoy
+        image: envoyproxy/envoy:dev-b65de1f56850326e1c6b74aa72cb1c9777441065
+        resources: {} # OMIT
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/envoy # /etc/envoy/envoy.yaml is the default path for envoy config
+
+      - name: go-test-app
+        image: carsonoid/go-test-app
+        args:
+        - /client
+        - http
+        - 'Source-App: client-1'
+        - http://localhost:8080
+        imagePullPolicy: Never # OMIT
+        resources: {} # OMIT
+        terminationMessagePath: /dev/termination-log # OMIT
+        terminationMessagePolicy: File # OMIT
+      dnsPolicy: ClusterFirst # OMIT
+      restartPolicy: Always # OMIT
+      schedulerName: default-scheduler # OMIT
+      securityContext: {} # OMIT
+      terminationGracePeriodSeconds: 30 # OMIT
+
+      volumes:
+      - name: config-volume
+        configMap:
+          name: client-envoy
+  # END CONTAINERS OMIT
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: client-2
+      purpose: client
+  template:
+    metadata:
+      labels:
+        app: client-2
+        purpose: client
+    spec:
+      containers:
+      - name: envoy
+        image: envoyproxy/envoy:dev-b65de1f56850326e1c6b74aa72cb1c9777441065
+        resources: {} # OMIT
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/envoy
+      - name: go-test-app
+        image: carsonoid/go-test-app
+        args:
+        - /client
+        - http
+        - 'Source-App: client-2'
+        - http://localhost:8080
+        imagePullPolicy: Never # OMIT
+        resources: {} # OMIT
+        terminationMessagePath: /dev/termination-log # OMIT
+        terminationMessagePolicy: File # OMIT
+      # END FOCUS OMIT
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: config-volume
+        configMap:
+          name: client-envoy

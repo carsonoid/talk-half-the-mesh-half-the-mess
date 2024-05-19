@@ -1,0 +1,72 @@
+# START CONFIG OMIT
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: control-plane
+data:
+  config.yaml: |
+    services:
+    - name: alpha
+      host: service-1.default.svc.cluster.local
+      port: 9000
+    - name: beta
+      host: service-2.default.svc.cluster.local
+      port: 9000
+# END CONFIG OMIT
+# START SERVICE OMIT
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: control-plane
+spec:
+  ports:
+  - name: grpc
+    port: 18000
+    protocol: TCP
+    targetPort: 18000
+  selector:
+    app: control-plane
+    purpose: control-plane
+  type: ClusterIP
+# END SERVICE OMIT
+---
+# START DEPLOYMENT OMIT
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: control-plane
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: control-plane, purpose: control-plane }
+  template:
+    metadata:
+      labels: { app: control-plane, purpose: control-plane }
+    spec:
+      # START FOCUS OMIT
+      containers:
+      - name: go-test-app
+        image: carsonoid/go-test-app
+        args:
+        - /control-plane
+        - /config/config.yaml
+        imagePullPolicy: Never # OMIT
+        resources: {} # OMIT
+        terminationMessagePath: /dev/termination-log # OMIT
+        terminationMessagePolicy: File # OMIT
+        volumeMounts:
+        - name: config
+          mountPath: /config
+      # END FOCUS OMIT
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: config
+        configMap:
+          name: control-plane
+# END DEPLOYMENT OMIT
