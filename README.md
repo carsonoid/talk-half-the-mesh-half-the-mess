@@ -1,1 +1,6 @@
-# Building A Lightweight Custom Service Mesh
+# Have Half The Service Mesh Without The Mess
+
+
+```sh
+./run
+```

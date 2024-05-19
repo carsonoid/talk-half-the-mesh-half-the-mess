@@ -1,0 +1,102 @@
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: service-1
+  template:
+    # set pod labels
+    metadata:
+      labels:
+        app: service-1
+      # END LABELS OMIT
+    spec:
+      containers:
+      # START FOCUS OMIT
+      - name: go-test-app
+        image: carsonoid/go-test-app
+        args:
+        - /server
+        # END FOCUS OMIT
+        imagePullPolicy: Never
+      dnsPolicy: ClusterFirst
+      # ...
+      # END DEPLOYMENT OMIT
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: service-1
+  name: service-1
+spec:
+  clusterIP: None
+  ports:
+  - port: 9000
+    protocol: TCP
+    targetPort: 9000
+  selector:
+    app: service-1
+  sessionAffinity: None
+  type: ClusterIP
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: service-2
+  template:
+    # set pod labels
+    metadata:
+      labels:
+        app: service-2
+      # END LABELS OMIT
+    spec:
+      containers:
+      # START FOCUS OMIT
+      - name: go-test-app
+        image: carsonoid/go-test-app
+        args:
+        - /server
+        # END FOCUS OMIT
+        imagePullPolicy: Never
+      dnsPolicy: ClusterFirst
+      # ...
+      # END DEPLOYMENT OMIT
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: service-2
+  name: service-2
+spec:
+  clusterIP: None
+  ports:
+  - port: 9000
+    protocol: TCP
+    targetPort: 9000
+  selector:
+    app: service-2
+  sessionAffinity: None
+  type: ClusterIP

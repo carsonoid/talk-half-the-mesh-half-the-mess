@@ -1,0 +1,106 @@
+---
+# Deployment
+# START DEPLOYMENT1 OMIT
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-1
+  template:
+    metadata:
+      labels:
+        app: service-1
+      # END LABELS OMIT
+    spec:
+      containers:
+      # START FOCUS OMIT
+      - name: go-test-app
+        image: carsonoid/go-test-app
+        args:
+        - /server
+        # END FOCUS OMIT
+        imagePullPolicy: Never
+      dnsPolicy: ClusterFirst
+      # ...
+      # END DEPLOYMENT1 OMIT
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+---
+# Service
+# START SERVICE1 OMIT
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: service-1
+  name: service-1
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: service-1
+  sessionAffinity: None
+  type: ClusterIP
+  clusterIP: None # <- headless to allow envoy dns resolution
+# END SERVICE1 OMIT
+---
+# Deployment
+# START DEPLOYMENT2 OMIT
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-2
+  template:
+    metadata:
+      labels:
+        app: service-2
+      # END LABELS OMIT
+    spec:
+      containers:
+      # START FOCUS OMIT
+      - name: go-test-app
+        image: carsonoid/go-test-app
+        args:
+        - /server
+        # END FOCUS OMIT
+        imagePullPolicy: Never
+      dnsPolicy: ClusterFirst
+      # ...
+      # END DEPLOYMENT2 OMIT
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+---
+# Service
+# START SERVICE2 OMIT
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: service-2
+  name: service-2
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: service-2
+  sessionAffinity: None
+  type: ClusterIP
+  clusterIP: None # <- headless to allow envoy dns resolution
+# END SERVICE2 OMIT
