@@ -1,0 +1,13 @@
+authorizationpolicies.policy.linkerd.io
+egressnetworks.policy.linkerd.io
+httproutes.policy.linkerd.io
+meshtlsauthentications.policy.linkerd.io
+networkauthentications.policy.linkerd.io
+serverauthorizations.policy.linkerd.io
+servers.policy.linkerd.io
+serviceprofiles.linkerd.io
+httproutes.gateway.networking.k8s.io
+grpcroutes.gateway.networking.k8s.io
+tlsroutes.gateway.networking.k8s.io
+tcproutes.gateway.networking.k8s.io
+externalworkloads.workload.linkerd.io

@@ -5,11 +5,16 @@ metadata:
   name: client-1
 spec:
   replicas: 1
-  selector: { matchLabels: { app: client-1, purpose: client } }
-# START DEPLOYMENT OMIT
-  # ...
+  selector:
+    matchLabels: 
+      app: client-1
+      purpose: client
   template:
-    metadata: { labels: { app: client-1, purpose: client } }
+    metadata:
+      labels: 
+        app: client-1
+        purpose: client
+# START DEPLOYMENT OMIT
     spec:
       containers:
       - name: go-test-app
@@ -17,22 +22,9 @@ spec:
         args:
         - /client
         - grpc
-        - xds:///alpha
         env:
         - name: GRPC_XDS_BOOTSTRAP_CONFIG
-          value: |
-            {
-                "xds_servers": [
-                    {
-                        "server_uri": "control-plane.default.svc.cluster.local:18000",
-                        "channel_creds": [{"type": "insecure"}],
-                        "server_features": ["xds_v3"]
-                    }
-                ],
-                "node": {"id": "test-id"}
-            }
-        # END DEPLOYMENT OMIT
-        # enable these to get more insight into the gRPC client behavior
+          value: '{"xds_servers":[{"server_uri":"control-plane:18000","channel_creds":[{"type":"insecure"}],"server_features":["xds_v3"]}],"node":{"id": "test-id"}}'
         # - name: GRPC_GO_LOG_SEVERITY_LEVEL
         #   value: info
         # - name: GRPC_GO_LOG_VERBOSITY_LEVEL
@@ -43,6 +35,8 @@ spec:
         resources: {} # OMIT
         terminationMessagePath: /dev/termination-log # OMIT
         terminationMessagePolicy: File # OMIT
+      # END FOCUS OMIT
+# END DEPLOYMENT OMIT
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
@@ -71,10 +65,9 @@ spec:
         args:
         - /client
         - grpc
-        - xds:///alpha
         env:
         - name: GRPC_XDS_BOOTSTRAP_CONFIG
-          value: '{"xds_servers":[{"server_uri":"control-plane:18000","channel_creds":[{"type":"insecure"}],"server_features":["xds_v3"]}],"node":{"id": "test-id"}}'
+          value: '{"xds_servers":[{"server_uri":"control-plane.default.svc.cluster.local:18000","channel_creds":[{"type":"insecure"}],"server_features":["xds_v3"]}],"node":{"id": "test-id"}}'
         imagePullPolicy: Never # OMIT
         resources: {} # OMIT
         terminationMessagePath: /dev/termination-log # OMIT

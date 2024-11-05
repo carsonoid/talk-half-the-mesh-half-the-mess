@@ -6,7 +6,6 @@ toolchain go1.22.2
 
 require (
 	github.com/envoyproxy/go-control-plane v0.12.0
-	github.com/fsnotify/fsnotify v1.7.0
 	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.1
 	k8s.io/api v0.30.1

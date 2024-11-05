@@ -4,16 +4,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: service-1
+  name: service-main
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: service-1
+      app: service-main
   template:
     metadata:
       labels:
-        app: service-1
+        app: service-main
       # END LABELS OMIT
     spec:
       containers:
@@ -38,15 +38,15 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: service-1
-  name: service-1
+    app: service-main
+  name: service-main
 spec:
   ports:
   - port: 8080
     protocol: TCP
     targetPort: 8080
   selector:
-    app: service-1
+    app: service-main
   sessionAffinity: None
   type: ClusterIP
   clusterIP: None # <- headless to allow envoy dns resolution
@@ -57,16 +57,16 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: service-2
+  name: service-beta
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: service-2
+      app: service-beta
   template:
     metadata:
       labels:
-        app: service-2
+        app: service-beta
       # END LABELS OMIT
     spec:
       containers:
@@ -91,15 +91,15 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: service-2
-  name: service-2
+    app: service-beta
+  name: service-beta
 spec:
   ports:
   - port: 8080
     protocol: TCP
     targetPort: 8080
   selector:
-    app: service-2
+    app: service-beta
   sessionAffinity: None
   type: ClusterIP
   clusterIP: None # <- headless to allow envoy dns resolution

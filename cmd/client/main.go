@@ -42,7 +42,7 @@ func main() {
 			panic(err)
 		}
 	case "grpc":
-		err := grpcClient(ctx, os.Args[2:])
+		err := grpcClient(ctx)
 		if err != nil {
 			panic(err)
 		}
@@ -69,14 +69,10 @@ func runEvery(ctx context.Context, d time.Duration, f func(ctx context.Context) 
 	}
 }
 
-func grpcClient(ctx context.Context, args []string) error {
-	if len(args) < 1 {
-		fmt.Println("Usage: client grpc <address>")
-		return fmt.Errorf("address required")
-	}
-
+func grpcClient(ctx context.Context) error {
 	// START GRPC OMIT
-	conn, err := grpc.NewClient(args[0], grpc.WithTransportCredentials(insecure.NewCredentials()))
+	const target = "xds:///service"
+	conn, err := grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
@@ -98,13 +94,8 @@ func grpcClient(ctx context.Context, args []string) error {
 }
 
 func httpClient(ctx context.Context, args []string) error {
-	if len(args) < 1 {
-		fmt.Println("Usage: client  http [headerpair...] <target>")
-		return fmt.Errorf("invalid usage")
-	}
-
 	headers := http.Header{}
-	for _, pair := range args[0 : len(args)-1] {
+	for _, pair := range args {
 		kv := strings.Split(pair, ":")
 		if len(kv) != 2 {
 			return fmt.Errorf("invalid header pair: %s", pair)
@@ -112,15 +103,17 @@ func httpClient(ctx context.Context, args []string) error {
 		headers.Add(strings.TrimSpace(kv[0]), strings.TrimSpace(kv[1]))
 	}
 
-	target := args[len(args)-1]
+	fmt.Println("Headers:", headers)
 
 	client := &http.Client{
 		Timeout: time.Second * 5,
 	}
 
 	fmt.Println("Starting HTTP client request loop")
+
+	// START HTTP OMIT
+	const target = "http://service.local:8080"
 	runEvery(ctx, time.Second/2, func(ctx context.Context) error {
-		// START HTTP OMIT
 		req, err := http.NewRequest(http.MethodGet, target, nil)
 		if err != nil {
 			return fmt.Errorf("failed to create request: %w", err)
@@ -140,13 +133,13 @@ func httpClient(ctx context.Context, args []string) error {
 			return fmt.Errorf("failed to read response body: %w", err)
 		}
 
-		fmt.Println("> Request Headers:", req.Header)
-		fmt.Println("< Response Headers:", resp.Header)
-		fmt.Println("< Response Body:", string(body))
+		fmt.Println(" > Request Headers:", req.Header)
+		fmt.Println("<  Response Headers:", resp.Header)
+		fmt.Println("<  Response Body:", string(body))
 
 		return nil
-		// END HTTP OMIT
 	})
+	// END HTTP OMIT
 
 	return nil
 }

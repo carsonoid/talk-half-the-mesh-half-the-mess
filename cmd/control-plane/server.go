@@ -106,24 +106,24 @@ func registerServer(grpcServer *grpc.Server, server server.Server) {
 	runtimeservice.RegisterRuntimeDiscoveryServiceServer(grpcServer, server)
 }
 
-// gRPC golang library sets a very small upper bound for the number gRPC/h2
-// streams over a single TCP connection. If a proxy multiplexes requests over
-// a single connection to the management server, then it might lead to
-// availability problems. Keepalive timeouts based on connection_keepalive parameter https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/examples#dynamic
-var grpcOptions = []grpc.ServerOption{
-	grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
-	grpc.KeepaliveParams(keepalive.ServerParameters{
-		Time:    grpcKeepaliveTime,
-		Timeout: grpcKeepaliveTimeout,
-	}),
-	grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
-		MinTime:             grpcKeepaliveMinTime,
-		PermitWithoutStream: true,
-	}),
-}
-
 // RunServer starts an xDS server at the given port.
 func RunServer(srv server.Server, port uint) {
+	// gRPC golang library sets a very small upper bound for the number gRPC/h2
+	// streams over a single TCP connection. If a proxy multiplexes requests over
+	// a single connection to the management server, then it might lead to
+	// availability problems. Keepalive timeouts based on connection_keepalive parameter https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/examples#dynamic
+	var grpcOptions []grpc.ServerOption
+	grpcOptions = append(grpcOptions,
+		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			Time:    grpcKeepaliveTime,
+			Timeout: grpcKeepaliveTimeout,
+		}),
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             grpcKeepaliveMinTime,
+			PermitWithoutStream: true,
+		}),
+	)
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
