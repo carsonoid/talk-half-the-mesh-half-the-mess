@@ -19,8 +19,8 @@ kubectl wait --timeout=60s --for=condition=Available=True \
   deployment/control-plane \
   deployment/client-1 \
   deployment/client-2 \
-  deployment/service-1 \
-  deployment/service-2
+  deployment/service-main \
+  deployment/service-beta
 
 kubetail --follow -k false -l purpose=client
 END RUN OMIT

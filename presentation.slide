@@ -1,4 +1,4 @@
-# Have Half The Service Mesh Without The Mess
+# Have Half The Service Mesh With Half The Mess
 
 Carson Anderson
 DevX-O / Principal Engineer, Weave
@@ -6,135 +6,213 @@ DevX-O / Principal Engineer, Weave
 
 https://github.com/carsonoid/talk-half-the-mesh-half-the-mess
 
-## What do you mean "Half The Mesh"?
+##
+
+.image assets/weave.png _ 1000
+
+## The problem
+
+##
+
+.image diagrams/core-problem.png _ 1000
+
+##
+
+.image diagrams/core-problem-1.png _ 1000
+
+##
+
+.image diagrams/core-problem-2.png _ 1000
+
+##
+
+.image assets/cncf-meshes.png _ 1000
+
+.link https://landscape.cncf.io
 
 ## Why not just use <insert service mesh here>?
 
-## Yet Another Service Mesh Diagram
+## Linkerd - CRDs
+
+.code ./assets/mesh-overhead//linkerd/crds.txt
+
+## Linkerd - Resources
+
+.code ./assets/mesh-overhead//linkerd/resources.txt
+
+## Istio - CRDs
+
+.code ./assets/mesh-overhead//istio/crds.txt
+
+## Istio - Resources
+
+.code ./assets/mesh-overhead//istio/resources.txt
+
+## What do you mean "Half The Mesh"?
+
+##
 
 .image diagrams/full-mesh.png _ 1000
 
-## What are we going to do?
+##
 
-1. Test Server And Client Code
-2. xDS Fundamentals
-3. Control-Plane Free Envoy Using xDS Files
-4. gRPC + xDS - From Files
-5. gRPC + xDS - From K8s
+.image diagrams/mesh-components.png _ 1000
+
+## Full Mesh Solutions
+
+* Linkerd
+  * 13 CRDs
+  * 42 Resources
+
+* Istio:
+
+  * 14 CRDs
+  * 29 Resources
+
+## "Half Mesh" Solutions
+
+* Sidecar Only
+  * 0 CRDs
+  * 1 Resource
+
+* Control Plane Only
+  * 0 CRDs
+  * 5 Resources
 
 ## Disclaimer
 
 The "half meshes" we build to day are not intended
 to compete with what you can do using a full service mesh product.
 
-## Test Server
+I personally have no problems with either the Linkerd or Istio projects. They are
+both amazing projects.
+
+I stand on the shoulders of giants. These "half mesh" solutions are built on amazing
+tools and projects from the CNCF ecosystem.
+
+## The Plan
+
+1. Test Server And Client Code
+2. xDS Fundamentals
+3. Sidecar only mesh using Envoy and xDS files
+5. Control Plane only mesh using gRPC and xDS
+
+## Test Server Code
 
 ## Test Server Code - HTTP
 
-.code cmd/server/main.go /START HTTP OMIT/,/END HTTP OMIT/
+.code cmd/server/main.go /START HTTP /,/END HTTP /
 
 ## Test Server Code - gRPC
 
-.code cmd/server/main.go /START GRPC OMIT/,/END GRPC OMIT/
-
-## Test Server Code - Main
-
-.code cmd/server/main.go /START MAIN OMIT/,/END MAIN OMIT/
+.code cmd/server/main.go /START GRPC /,/END GRPC /
 
 ## Test Client
 
 ## Test Client Code - HTTP
 
-.code cmd/client/main.go /START HTTP OMIT/,/END HTTP OMIT/
+.code cmd/client/main.go /START HTTP /,/END HTTP /
 
 ## Test Client Code - gRPC
 
-.code cmd/client/main.go /START GRPC OMIT/,/END GRPC OMIT/
+.code cmd/client/main.go /START GRPC /,/END GRPC /
 
 ## xDS Fundamentals
 
 ## What is xDS?
 
-* "eXtensible Discovery Service"?
-* A standardized way to describe networking resources
+* "eXtensible" Discovery Service?
+  * The "x" is a variable! Examples: RDS, CDS, EDS, LDS, etc.
+
+In short:
+
+A standardized way to describe networking resources
+
 * Managed by the Envoy project but used elsewhere (Ex: go-grpc implementation)
 
 ## The Fundamental Resources
 
 xDS supports many different resources, this presentation primarily deals with
 
-* Clusters
-    * Collections of endpoints (ips/hostnames) that provide a specific network resource
-* Listeners
+* Listeners (LDS)
     * A tcp/udp listener
-* Routes
+* Routes (RDS)
     * Configuration describing how traffic should be routed
-* Endpoints
+* Clusters (CDS)
+    * Collections of endpoints (ips/hostnames) that provide a specific network resource
+* Endpoints (EDS)
     * Sometimes a separate resource, sometimes in clusters
 
-## Half Mesh 1 - Control-Plane Free Envoy Using xDS Files
+## The Fundamental Resources
 
-## Half Mesh 1 Diagram
+.image diagrams/xds-parts.png _ 900
+
+## Half Mesh 1 - Sidecar only mesh using Envoy and xDS files
+
+## Sidecar Only Mesh Diagram
 
 .image diagrams/half-mesh-sidecar.png _ 1000
-
-## Half Mesh 1 Description
-
-* Have clients access services using `localhost`
-* Use Envoy to proxy traffic
-* Use Kubernetes to provide Envoy config files
 
 ## Server Resources - Deployment 1
 
 Absolutely basic Kubernetes Deployment
 
-.code 1-sidecar-only/k8s-services.yaml /START DEPLOYMENT1 OMIT/,/END DEPLOYMENT1 OMIT/
+.code 1-sidecar-only/k8s-services.yaml /START DEPLOYMENT1 /,/END DEPLOYMENT1 /
 
 ## Server Resources - Deployment 2
 
 Absolutely basic Kubernetes Deployment... Again
 
-.code 1-sidecar-only/k8s-services.yaml /START DEPLOYMENT2 OMIT/,/END DEPLOYMENT2 OMIT/
+.code 1-sidecar-only/k8s-services.yaml /START DEPLOYMENT2 /,/END DEPLOYMENT2 /
 
 ## Server Resources - Service 1
 
 A bare bones Kubernetes Service
 
-.code 1-sidecar-only/k8s-services.yaml /START SERVICE1 OMIT/,/END SERVICE1 OMIT/
+.code 1-sidecar-only/k8s-services.yaml /START SERVICE1 /,/END SERVICE1 /
 
 ## Server Resources - Service 2
 
 A bare bones Kubernetes Service... Again
 
-.code 1-sidecar-only/k8s-services.yaml /START SERVICE2 OMIT/,/END SERVICE2 OMIT/
+.code 1-sidecar-only/k8s-services.yaml /START SERVICE2 /,/END SERVICE2 /
 
 ## Client Resources - Deployment
 
-Basic so far...
+.code 1-sidecar-only/k8s-clients.yaml /START DEPLOYMENT1 /,/END DEPLOYMENT1 /
 
-.code 1-sidecar-only/k8s-clients.yaml /START DEPLOYMENT1 OMIT/,/END DEPLOYMENT1 OMIT/
+## Client Resources - Deployment - Sidecar
 
-## Client Resources - Deployment
-
-Finally! Something interesting!
-
-.code 1-sidecar-only/k8s-clients.yaml /START CONTAINERS OMIT/,/END CONTAINERS OMIT/
+.code 1-sidecar-only/k8s-clients.yaml /START CONTAINERS /,/END CONTAINERS /
 
 ## Client Resources - Envoy Config - Main
 
-.code 1-sidecar-only/k8s-clients.yaml /START CONFIGMAP_INTRO OMIT/,/END CONFIGMAP_INTRO OMIT/
+.code 1-sidecar-only/k8s-clients.yaml /START CONFIGMAP_INTRO /,/END CONFIGMAP_INTRO /
 
 ## Client Resources - Envoy Config - CDS
 
-.code 1-sidecar-only/k8s-clients.yaml /START CONFIGMAP_CDS OMIT/,/END CONFIGMAP_CDS OMIT/
+.code 1-sidecar-only/k8s-clients.yaml /START CONFIGMAP_CDS /,/END CONFIGMAP_CDS /
 
 ## Client Resources - Envoy Config - LDS
 
-.code 1-sidecar-only/k8s-clients.yaml /START CONFIGMAP_LDS OMIT/,/END CONFIGMAP_LDS OMIT/
+.code 1-sidecar-only/k8s-clients.yaml /START CONFIGMAP_LDS /,/END CONFIGMAP_LDS /
 
 ## Client Resources - Envoy Config - LDS Continued
 
-.code 1-sidecar-only/k8s-clients.yaml /START CONFIGMAP_LDS_ROUTES OMIT/,/END CONFIGMAP_LDS_ROUTES OMIT/
+.code 1-sidecar-only/k8s-clients.yaml /START CONFIGMAP_LDS_ROUTES /,/END CONFIGMAP_LDS_ROUTES /
+
+```
+const target = "http://service.local:8080"
+```
+
+## Client Resources - How much code?
+
+.play 1-sidecar-only/cloc.go /START RUN/,/END RUN/
+
+
+## Client Resources - How much code?
+
+.image assets/sidecar-only-summary.png 560 _
 
 ## But where did that config come from?
 
@@ -152,11 +230,11 @@ Getting comfortable with the documentation is the key to using envoy successfull
 
 This has to be run once to build the app used by every demo
 
-.play 0-setup/run.go /START RUN OMIT/,/END RUN OMIT/
+.play 0-setup/run.go /START RUN /,/END RUN /
 
 ## Sidecar Only Demo
 
-.play 1-sidecar-only/run.go /START RUN OMIT/,/END RUN OMIT/
+.play 1-sidecar-only/run.go /START RUN /,/END RUN /
 
 ## New Features Unlocked!
 
@@ -201,18 +279,18 @@ abstraction.
 * Envoy is built to be a sidecar
 * Envoy has almost no opinions
 * Envoy has a huge feature set
-* Envoy uses xDS for configuration, which we build on in the next two demonstrations
+* Envoy uses xDS for configuration, which we build on in the next half mesh
 
-## Half Mesh 2-A - Sidecar Free gRPC
+## Half Mesh 2 - Control Plane Only
 
-## Half Mesh 2-A Diagram
+##
 
-.image diagrams/half-mesh-cp.png _ 1000
+.image diagrams/half-mesh-cp-k8s.png _ 1000
 
-## Half Mesh 2-A Description
+## Half Mesh 2 - Control Plane Only
 
 * Write **Our Own** Control plane
-  * Use Kubernetes to provide a config file
+  * Use Kubernetes to provide config via Service resources
 * Use smart gRPC Clients
   * Go
   * Javascript
@@ -232,157 +310,120 @@ All the hard work has been is done in the control plane package:
 
 .link https://github.com/envoyproxy/go-control-plane
 
+## 
+
+We are going to make our own abstraction using annotations on services
+
+.code 2-control-plane-only/k8s-services.yaml /START SERVICE /,/END SERVICE /
 
 ## Control Plane Logic
 
 Writing a custom control plane boils down to only a few steps:
 
-1. Create a cache using `go-control-plane`
-2. Generate our xDS resource definitions using our own config file structure
-3. Send the xDS resources to the cache
-4. Watch configuration and repeat steps 2 and 3 forver in the background
-5. Start the `go-control-plane` grpc server
+1. Create an xDS cache using `go-control-plane`
+2. Watch Kubernetes Services and Endpoints
+3. Generate our and use xDS resource definitions
 
-## 1. Create a cache
+## 1. Create an xDS cache using `go-control-plane`
+
+## 1. Create an xDS cache using `go-control-plane`
 
 Imports:
 
-.code cmd/control-plane/main/main.go  /START STEP1_IMPORT OMIT/,/END STEP1_IMPORT OMIT/
+.code cmd/control-plane/main/main.go  /START STEP1_IMPORT /,/END STEP1_IMPORT /
 
-.code cmd/control-plane/main/main.go  /START STEP1 OMIT/,/END STEP1 OMIT/
+.code cmd/control-plane/main/main.go  /START STEP1 /,/END STEP1 /
 
-## 2. Generate Resources Using Own Own Config
+## 2. Watch Kubernetes Services and Endpoints
 
-## Control-Plane Config
+## Kubernetes Watch Setup
 
-We are going to make our own abstraction:
+.code cmd/control-plane/main/kube.go  /START WATCH /,/END WATCH /
 
-.code 2-control-plane-only/k8s-control-plane.yaml /START CONFIG OMIT/,/END CONFIG OMIT/
+## Kubernetes Watch Services
 
-## Control-Plane Config Process
+.code cmd/control-plane/main/kube.go  /START SVCWATCH /,/END SVCWATCH /
 
-.code cmd/control-plane/main/main.go /START GET_RESOURCES OMIT/,/END GET_RESOURCES OMIT/
+## Kubernetes Watch Endpoints
 
-## Control-Plane Resources - Clusters
+.code cmd/control-plane/main/kube.go  /START EPWATCH /,/END EPWATCH /
 
-.code cmd/control-plane/main/main.go /START SERVICE_RESOURCES OMIT/,/END SERVICE_RESOURCES OMIT/
+## Kubernetes Watch Event Work
 
-## Remember This?
+.code cmd/control-plane/main/kube.go  /START UPDATE CACHE /,/END UPDATE CACHE /
 
-.code 1-sidecar-only/k8s-clients.yaml /START CONFIGMAP_CDS OMIT/,/END CONFIGMAP_CDS OMIT/
+## Kubernetes Watch Event Work
 
-## Control-Plane Resources - Listeners
+.code cmd/control-plane/main/kube.go  /START GET SNAPSHOT /,/END GET SNAPSHOT /
 
-.code cmd/control-plane/main/main.go /START LISTENER_RESOURCES OMIT/,/END LISTENER_RESOURCES OMIT/
+## 3. Generate our and use xDS resource definitions
 
-## Control-Plane Resources - Routes
+## getResources()
 
-.code cmd/control-plane/main/main.go /START ROUTE_RESOURCES OMIT/,/END ROUTE_RESOURCES OMIT/
+.code cmd/control-plane/main/kube.go  /START RESOURCES /,/END RESOURCES /
 
-## 3. Send the xDS resources to the cache
+## getResources()
 
-.code cmd/control-plane/main/main.go  /START STEP3 OMIT/,/END STEP3 OMIT/
+.code cmd/control-plane/main/kube.go  /START RESOURCES2 /,/END RESOURCES2 /
 
-## 4. Watch configuration and repeat forver
+## getListener()
 
-.code cmd/control-plane/main/main.go  /START STEP4A OMIT/,/END STEP4A OMIT/
+.code cmd/control-plane/main/kube.go  /func getListener/,/^}/
 
-.code cmd/control-plane/main/main.go  /START STEP4B OMIT/,/END STEP4B OMIT/
+## Recall...
 
-## 5. Start go-control-plane server
+.code 1-sidecar-only/k8s-clients.yaml /START CONFIGMAP_LDS_ROUTES/,/END CONFIGMAP_LDS_ROUTES/
 
-.code cmd/control-plane/main/main.go  /START STEP5 OMIT/,/END STEP5 OMIT/
+## getRoute()
 
-.code cmd/control-plane/server.go /^func RunServer/,/^}/
+```
+const target = "xds:///service"
+```
 
-## Control-Plane Kubernetes Resource
+.code cmd/control-plane/main/kube.go  /func getRoute/,/^}/
 
-## Control-Plane - Deployment
+## Recall...
 
-.code 2-control-plane-only/k8s-control-plane.yaml /START DEPLOYMENT OMIT/,/END DEPLOYMENT OMIT/
+.code 1-sidecar-only/k8s-clients.yaml /START CONFIGMAP_CDS/,/END CONFIGMAP_CDS/
 
-## Control-Plane - Service
+## getClusters()
 
-.code 2-control-plane-only/k8s-control-plane.yaml /START SERVICE OMIT/,/END SERVICE OMIT/
+.code cmd/control-plane/main/kube.go  /func getClusters/,/^}/
 
-## Demo Service Deployment Changes
+## getEndpoints()
 
-None!
+.code cmd/control-plane/main/kube.go  /func getEndpoints/,/^}/
+
+## How much code?
+
+.play 2-control-plane-only/cloc.go  /START RUN /,/END RUN /
+
+## Control Plane Kubernetes Setup
+
+## Control Plane - Deployment
+
+.code 2-control-plane-only/k8s-control-plane.yaml /START DEPLOYMENT /,/END DEPLOYMENT /
+
+## Control Plane - Service
+
+.code 2-control-plane-only/k8s-control-plane.yaml /START SERVICE /,/END SERVICE /
 
 ## Demo Client Deployment Changes
 
-.code 2-control-plane-only/k8s-clients.yaml  /START DEPLOYMENT OMIT/,/END DEPLOYMENT OMIT/
+.code 2-control-plane-only/k8s-clients.yaml  /START DEPLOYMENT /,/END DEPLOYMENT /
 
-## Demo Time!
-
-## Control Plane Only Demo
-
-.play 2-control-plane-only/run.go /START RUN OMIT/,/END RUN OMIT/
-
-## Half Mesh 2-B - Sidecar Free gRPC with Deep Kubernetes Integration
-
-## Half Mesh 2-B Diagram
-
-.image diagrams/half-mesh-cp-k8s.png _ 1000
-
-## Half Mesh 2-A Description
-
-* **Enhance** Control Plane to leverage The Kubernetes API
-  * Watch Kubernetes Services and Endpoints for real-time updates
-
-## Control-Plane - Config
-
-.code 3-control-plane-kube/k8s-services.yaml /START SERVICE OMIT/,/END SERVICE OMIT/
-
-## Control-Plane - Kubernetes Watch Setup
-
-.code cmd/control-plane-kube/main/kube.go  /START WATCH OMIT/,/END WATCH OMIT/
-
-## Control-Plane - Kubernetes Watch Services
-
-.code cmd/control-plane-kube/main/kube.go  /START SVCWATCH OMIT/,/END SVCWATCH OMIT/
-
-## Control-Plane - Kubernetes Watch Endpoints
-
-.code cmd/control-plane-kube/main/kube.go  /START EPWATCH OMIT/,/END EPWATCH OMIT/
-
-## Control-Plane - Kubernetes Resource Creation
-
-.code cmd/control-plane-kube/main/kube.go  /START RESOURCES OMIT/,/END RESOURCES OMIT/
-
-## Control-Plane - Kubernetes Resource Creation
-
-.code cmd/control-plane-kube/main/kube.go  /START ENDPOINTS OMIT/,/END ENDPOINTS OMIT/
-
-## Control-Plane - Kubernetes xDS Resources - Clusters
-
-.code cmd/control-plane-kube/main/main.go  /START CLUSTER_RESOURCES OMIT/,/END CLUSTER_RESOURCES OMIT/
-
-## Control-Plane - Kubernetes xDS Resources - Listeners
-
-.code cmd/control-plane-kube/main/main.go  /START LISTENER_RESOURCES OMIT/,/END LISTENER_RESOURCES OMIT/
-
-## Control-Plane - Kubernetes xDS Resources - Routes
-
-.code cmd/control-plane-kube/main/main.go  /START ROUTE_RESOURCES OMIT/,/END ROUTE_RESOURCES OMIT/
-
-## Control-Plane - Kubernetes xDS Resources - Endpoints
-
-.code cmd/control-plane-kube/main/main.go  /START ENDPOINT_RESOURCES OMIT/,/END ENDPOINT_RESOURCES OMIT/
-
-## Control-Plane - Kubernetes xDS Resources - Endpoints
-
-.code cmd/control-plane-kube/main/main.go  /START GET_ENDPOINTS_SLICE OMIT/,/END GET_ENDPOINTS_SLICE OMIT/
+> We also no longer need the `hostAliases`
 
 ## Demo Time!
 
 ## Control Plane Kube Demo
 
-.play 3-control-plane-kube/run.go /START RUN OMIT/,/END RUN OMIT/
+.play 2-control-plane-only/run.go /START RUN /,/END RUN /
 
 ## New Features Unlocked!
 
 By simply changing the xDS resources the control plane generates
+you can add:
 
 * Load Balancing
 * Header-based routing
@@ -391,3 +432,7 @@ By simply changing the xDS resources the control plane generates
 * Rate Limiting
 * Header manipulation
 * And more!
+
+##
+
+.image diagrams/summary.png _ 1000

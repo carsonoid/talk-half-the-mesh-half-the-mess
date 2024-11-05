@@ -3,17 +3,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: service-1
+  name: service-main
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: service-1
+      app: service-main
   template:
     # set pod labels
     metadata:
       labels:
-        app: service-1
+        app: service-main
       # END LABELS OMIT
     spec:
       containers:
@@ -32,13 +32,18 @@ spec:
       securityContext: {}
       terminationGracePeriodSeconds: 30
 ---
-# Service
+# START SERVICE OMIT
 apiVersion: v1
 kind: Service
 metadata:
+  name: service-main
   labels:
-    app: service-1
-  name: service-1
+    app: service-main
+  annotations:
+    mesh-service: | # <---- Here!
+      provides: service
+      port: 9000
+      weight: 1
 spec:
   clusterIP: None
   ports:
@@ -46,25 +51,26 @@ spec:
     protocol: TCP
     targetPort: 9000
   selector:
-    app: service-1
+    app: service-main
   sessionAffinity: None
   type: ClusterIP
+# END SERVICE OMIT
 ---
 # Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: service-2
+  name: service-beta
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: service-2
+      app: service-beta
   template:
     # set pod labels
     metadata:
       labels:
-        app: service-2
+        app: service-beta
       # END LABELS OMIT
     spec:
       containers:
@@ -87,9 +93,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: service-beta
   labels:
-    app: service-2
-  name: service-2
+    app: service-beta
+  annotations:
+    mesh-service: | # <---- Here!
+      provides: service
+      port: 9000
+      weight: 0
 spec:
   clusterIP: None
   ports:
@@ -97,6 +108,6 @@ spec:
     protocol: TCP
     targetPort: 9000
   selector:
-    app: service-2
+    app: service-beta
   sessionAffinity: None
   type: ClusterIP

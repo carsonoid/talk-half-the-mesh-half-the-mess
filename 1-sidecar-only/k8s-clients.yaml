@@ -43,57 +43,51 @@ data:
               typed_config:
                 "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
             # START CONFIGMAP_LDS_ROUTES OMIT
-            route_config:
+            route_config: # <- route config goes here
               # END CONFIGMAP_LDS OMIT
               name: default_route
               virtual_hosts:
               - name: default_host
-                domains: [ "*" ]
+                domains: [ "service.local:8080" ]
                 routes:
-                # # route "Source-App: client-1" goes to service 2
-                # - match:
+                # - match: # route "Source-App: client-1" goes to beta
                 #     prefix: "/"
-                #     headers:
-                #     - { name: "Source-App", exact_match: "client-1" }
-                #   route: { cluster: service_2_cluster }
-
-                # default route goes to service 1
-                - match:
+                #     headers: [{name: "Source-App", string_match: {exact: "client-1"}}]
+                #   route: { cluster: service_beta_cluster }
+                - match: # default route goes to main
                     prefix: "/"
-                  route: { cluster: service_1_cluster }
-                # END CONFIGMAP_LDS_ROUTES OMIT
-                  # uncomment to enable other mesh features
-                  # retry_policy:
-                  #   retry_on: 5xx;gateway-error;reset;connect-failure
+                  route:
+                    cluster: service_main_cluster
                   # weighted_clusters:
                   #   clusters:
-                  #   - name: service_1_cluster
+                  #   - name: service_main_cluster
                   #     weight: 50
-                  #   - name: service_2_cluster
+                  #   - name: service_beta_cluster
                   #     weight: 50
+                # END CONFIGMAP_LDS_ROUTES OMIT
 # START CONFIGMAP_CDS OMIT
   cds.yaml: |
     resources:
     - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
-      name: service_1_cluster
+      name: service_main_cluster
       type: STRICT_DNS
       load_assignment:
-        cluster_name: service_1_cluster
+        cluster_name: service_main_cluster
         endpoints:
         - lb_endpoints:
           - endpoint:
               address:
-                socket_address: { address: service-1.default.svc.cluster.local, port_value: 8080 }
+                socket_address: { address: service-main.default.svc.cluster.local, port_value: 8080 }
     - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
-      name: service_2_cluster
+      name: service_beta_cluster
       type: STRICT_DNS
       load_assignment:
-        cluster_name: service_2_cluster
+        cluster_name: service_beta_cluster
         endpoints:
         - lb_endpoints:
           - endpoint:
               address:
-                socket_address: { address: service-2.default.svc.cluster.local, port_value: 8080 }
+                socket_address: { address: service-beta.default.svc.cluster.local, port_value: 8080 }
 # END CONFIGMAP_CDS OMIT
 ---
 # START DEPLOYMENT1 OMIT
@@ -107,14 +101,20 @@ spec:
     matchLabels:
       app: client-1
       purpose: client
+  # START DEPLOYMENT1_HOSTS OMIT
   template:
     metadata:
       labels:
         app: client-1
         purpose: client
     spec:
+      hostAliases:
+      - ip: "127.0.0.1"
+        hostnames:
+        - "service.local"
+  # END DEPLOYMENT1_HOSTS OMIT
   # START CONTAINERS OMIT
-  #...
+      # ...
   # END DEPLOYMENT1 OMIT
       containers:
       - name: envoy
@@ -130,7 +130,6 @@ spec:
         - /client
         - http
         - 'Source-App: client-1'
-        - http://localhost:8080
         imagePullPolicy: Never # OMIT
         resources: {} # OMIT
         terminationMessagePath: /dev/termination-log # OMIT
@@ -163,6 +162,10 @@ spec:
         app: client-2
         purpose: client
     spec:
+      hostAliases:
+      - ip: "127.0.0.1"
+        hostnames:
+        - "service.local"
       containers:
       - name: envoy
         image: envoyproxy/envoy:dev-b65de1f56850326e1c6b74aa72cb1c9777441065
@@ -176,7 +179,6 @@ spec:
         - /client
         - http
         - 'Source-App: client-2'
-        - http://localhost:8080
         imagePullPolicy: Never # OMIT
         resources: {} # OMIT
         terminationMessagePath: /dev/termination-log # OMIT

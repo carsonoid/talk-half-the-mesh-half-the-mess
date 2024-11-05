@@ -1,7 +1,0 @@
-services:
-- name: service-1
-  host: service-1.default.svc.cluster.local
-  port: 9000
-- name: service-2
-  host: service-2.default.svc.cluster.local
-  port: 9000

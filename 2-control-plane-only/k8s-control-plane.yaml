@@ -1,21 +1,38 @@
-# START CONFIG OMIT
 ---
 apiVersion: v1
-kind: ConfigMap
+kind: ServiceAccount
 metadata:
   name: control-plane
-data:
-  config.yaml: |
-    services:
-    - name: alpha
-      host: service-1.default.svc.cluster.local
-      port: 9000
-    - name: beta
-      host: service-2.default.svc.cluster.local
-      port: 9000
-# END CONFIG OMIT
-# START SERVICE OMIT
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: control-plane
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - services
+  - endpoints
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: control-plane
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: control-plane
+subjects:
+- kind: ServiceAccount
+  name: control-plane
+  namespace: default
+---
+# START SERVICE OMIT
 apiVersion: v1
 kind: Service
 metadata:
@@ -40,10 +57,14 @@ metadata:
 spec:
   replicas: 1
   selector:
-    matchLabels: { app: control-plane, purpose: control-plane }
+    matchLabels:
+      app: control-plane
+      purpose: control-plane
   template:
     metadata:
-      labels: { app: control-plane, purpose: control-plane }
+      labels:
+        app: control-plane
+        purpose: control-plane
     spec:
       # START FOCUS OMIT
       containers:
@@ -51,22 +72,15 @@ spec:
         image: carsonoid/go-test-app
         args:
         - /control-plane
-        - /config/config.yaml
         imagePullPolicy: Never # OMIT
         resources: {} # OMIT
         terminationMessagePath: /dev/termination-log # OMIT
         terminationMessagePolicy: File # OMIT
-        volumeMounts:
-        - name: config
-          mountPath: /config
       # END FOCUS OMIT
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
       securityContext: {}
       terminationGracePeriodSeconds: 30
-      volumes:
-      - name: config
-        configMap:
-          name: control-plane
+      serviceAccountName: control-plane
 # END DEPLOYMENT OMIT
